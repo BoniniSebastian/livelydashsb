@@ -18,12 +18,12 @@
       </div>
 
       <div class="actions">
-        <button id="qrBtn" class="iconBtn">QR</button>
-        <button id="adminBtn" class="iconBtn">⚙</button>
+        <button id="qrBtn" class="iconBtn" type="button">QR</button>
+        <button id="adminBtn" class="iconBtn" type="button">⚙</button>
       </div>
     </header>
 
-    <button id="addBtn" class="mainBtn">+ Kupong</button>
+    <button id="addBtn" class="mainBtn" type="button">+ Kupong</button>
 
     <div id="list"></div>
   </div>
@@ -38,7 +38,7 @@
           <div class="miniLabel">KUPONG</div>
           <h2>Din kupong</h2>
         </div>
-        <button id="closeModalBtn" class="iconBtn">✕</button>
+        <button id="closeModalBtn" class="iconBtn" type="button">✕</button>
       </div>
 
       <div class="modalBody">
@@ -67,7 +67,7 @@
       </div>
 
       <div class="modalFoot">
-        <button id="saveCouponBtn" class="mainBtn">Spara / Lock in</button>
+        <button id="saveCouponBtn" class="mainBtn" type="button">Spara / Lock in</button>
       </div>
     </div>
   </div>
@@ -82,7 +82,7 @@
           <div class="miniLabel">DETALJER</div>
           <h2 id="detailName">Kupong</h2>
         </div>
-        <button id="closeDetailBtn" class="iconBtn">✕</button>
+        <button id="closeDetailBtn" class="iconBtn" type="button">✕</button>
       </div>
 
       <div class="modalBody">
@@ -98,6 +98,61 @@
         </div>
 
         <div id="detailBreakdown" class="detailBreakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin popup -->
+  <div id="adminModal" class="modal hidden">
+    <div class="adminBackdrop"></div>
+
+    <div class="modalCard adminCard">
+      <div class="modalHead">
+        <div>
+          <div class="miniLabel">ADMIN</div>
+          <h2>Skapa omgång</h2>
+        </div>
+        <button id="closeAdminBtn" class="iconBtn" type="button">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="adminSection">
+          <div class="adminSectionTitle">Match</div>
+
+          <label class="field">
+            <span>Omgångsnamn</span>
+            <input id="roundTitleInput" type="text" placeholder="T.ex. Fredagsmatchen">
+          </label>
+
+          <label class="field">
+            <span>Matchlänk</span>
+            <input id="matchLinkInput" type="text" placeholder="Klistra in matchlänken här">
+          </label>
+
+          <div class="grid2">
+            <label class="field">
+              <span>Hemmalag</span>
+              <input id="homeTeamInput" type="text" placeholder="Hemmalag">
+            </label>
+
+            <label class="field">
+              <span>Bortalag</span>
+              <input id="awayTeamInput" type="text" placeholder="Bortalag">
+            </label>
+          </div>
+        </div>
+
+        <div class="adminSection dangerSection">
+          <div class="adminSectionTitle">Farligt</div>
+          <div class="adminDangerText">
+            Nollställ omgång raderar deltagare, kuponger och omgångsinfo.
+          </div>
+        </div>
+      </div>
+
+      <div class="modalFoot adminFoot">
+        <button id="resetRoundBtn" class="ghostBtn" type="button">Nollställ omgång</button>
+        <button id="saveAdminBtn" class="mainBtn" type="button">Spara omgång</button>
       </div>
     </div>
   </div>
