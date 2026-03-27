@@ -20,6 +20,14 @@ const bet1 = document.getElementById("bet1");
 const bet2 = document.getElementById("bet2");
 const saveCouponBtn = document.getElementById("saveCouponBtn");
 
+const detailModal = document.getElementById("detailModal");
+const closeDetailBtn = document.getElementById("closeDetailBtn");
+const detailBackdrop = document.querySelector(".detailBackdrop");
+const detailName = document.getElementById("detailName");
+const detailScore = document.getElementById("detailScore");
+const detailStatus = document.getElementById("detailStatus");
+const detailBreakdown = document.getElementById("detailBreakdown");
+
 function openCouponModal() {
   couponModal.classList.remove("hidden");
 }
@@ -31,9 +39,36 @@ function closeCouponModal() {
   bet2.value = "";
 }
 
+function openDetailModal(data) {
+  detailName.textContent = data.name || "Kupong";
+  detailScore.textContent = `${data.score || 0} p`;
+  detailStatus.textContent = data.lockedIn ? "LOCKED" : "ÖPPEN";
+
+  detailBreakdown.innerHTML = `
+    <div class="breakdownItem">
+      <div class="breakdownTitle">Lag som gör första målet</div>
+      <div class="breakdownMeta">Ditt val: ${labelFirstGoalTeam(data?.bets?.firstGoalTeam)}</div>
+    </div>
+
+    <div class="breakdownItem">
+      <div class="breakdownTitle">Vinner hemmalaget matchen</div>
+      <div class="breakdownMeta">Ditt val: ${labelHomeWin(data?.bets?.homeWin)}</div>
+    </div>
+  `;
+
+  detailModal.classList.remove("hidden");
+}
+
+function closeDetailModal() {
+  detailModal.classList.add("hidden");
+}
+
 addBtn.onclick = openCouponModal;
 closeModalBtn.onclick = closeCouponModal;
 modalBackdrop.onclick = closeCouponModal;
+
+closeDetailBtn.onclick = closeDetailModal;
+detailBackdrop.onclick = closeDetailModal;
 
 saveCouponBtn.onclick = async () => {
   const name = nameInput.value.trim();
@@ -84,8 +119,9 @@ onSnapshot(participantsQuery, (snapshot) => {
     const score = data.score || 0;
     const pct = leaderScore > 0 ? (score / leaderScore) * 100 : 0;
 
-    const div = document.createElement("div");
+    const div = document.createElement("button");
     div.className = "card";
+    div.type = "button";
 
     div.innerHTML = `
       <div class="cardTop">
@@ -100,9 +136,23 @@ onSnapshot(participantsQuery, (snapshot) => {
       </div>
     `;
 
+    div.onclick = () => openDetailModal(data);
+
     list.appendChild(div);
   });
 });
+
+function labelFirstGoalTeam(value) {
+  if (value === "home") return "Hemmalag";
+  if (value === "away") return "Bortalag";
+  return "-";
+}
+
+function labelHomeWin(value) {
+  if (value === "yes") return "Ja";
+  if (value === "no") return "Nej";
+  return "-";
+}
 
 function escapeHtml(value) {
   return String(value)
