@@ -29,18 +29,23 @@ body{
   inset:0;
 }
 
-button,input,select{
+button,input,select,textarea{
   font:inherit;
   color:inherit;
 }
 
-input,select{
+input,select,textarea{
   font-size:16px;
 }
 
 button{
   cursor:pointer;
   border:none;
+}
+
+textarea{
+  resize:vertical;
+  min-height:120px;
 }
 
 .blob{
@@ -125,6 +130,38 @@ h1{
   color:var(--text);
 }
 
+.qrInlineCard{
+  margin-top:14px;
+  padding:12px;
+  border-radius:18px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.qrInlineTitle{
+  font-size:12px;
+  font-weight:700;
+}
+
+.qrInlineSub{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.35;
+  word-break:break-all;
+}
+
+#qrCanvasInline,
+#qrCanvasBig{
+  background:#fff;
+  border-radius:12px;
+  padding:6px;
+}
+
 #list{
   margin-top:16px;
   display:flex;
@@ -207,7 +244,8 @@ h1{
 
 .modalBackdrop,
 .detailBackdrop,
-.adminBackdrop{
+.adminBackdrop,
+.qrBackdrop{
   position:absolute;
   inset:0;
   background:rgba(3,7,12,.70);
@@ -231,7 +269,13 @@ h1{
 }
 
 .adminCard{
-  max-width:520px;
+  max-width:560px;
+}
+
+.qrCard{
+  max-width:360px;
+  bottom:auto;
+  height:auto;
 }
 
 .modalHead{
@@ -279,25 +323,64 @@ h1{
 }
 
 .field input,
-.field select{
+.field select,
+.field textarea{
   width:100%;
   min-height:40px;
   border-radius:12px;
   border:1px solid var(--line);
   background:rgba(255,255,255,.03);
-  padding:0 10px;
+  padding:10px;
   font-size:13px;
   outline:none;
 }
 
-.field input::placeholder{
+.field input::placeholder,
+.field textarea::placeholder{
   color:rgba(255,255,255,.35);
 }
 
 .field select:focus,
-.field input:focus{
+.field input:focus,
+.field textarea:focus{
   border-color:var(--neon);
   box-shadow:0 0 8px rgba(25,246,255,.4);
+}
+
+.questionList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.questionCard{
+  padding:12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+}
+
+.questionTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.questionLabel{
+  font-size:12px;
+  font-weight:700;
+  line-height:1.35;
+}
+
+.pointsBadge{
+  flex-shrink:0;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:10px;
+  border:1px solid rgba(25,246,255,.25);
+  background:rgba(25,246,255,.08);
 }
 
 .summaryCard{
@@ -348,7 +431,7 @@ h1{
   margin-top:6px;
   font-size:11px;
   color:var(--muted);
-  line-height:1.35;
+  line-height:1.4;
 }
 
 .adminSection{
@@ -362,6 +445,45 @@ h1{
   font-size:12px;
   font-weight:700;
   margin-bottom:10px;
+}
+
+.adminList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.adminItem{
+  padding:12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+}
+
+.adminItemHead{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.adminItemTitle{
+  font-size:12px;
+  font-weight:700;
+  line-height:1.35;
+}
+
+.adminMiniGrid{
+  display:grid;
+  grid-template-columns:1fr 110px;
+  gap:10px;
+}
+
+.sidebetGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr 110px;
+  gap:10px;
 }
 
 .grid2{
@@ -392,8 +514,23 @@ h1{
   margin-top:0;
 }
 
-@media (max-width:420px){
-  .grid2{
+.qrModalBody{
+  align-items:center;
+  justify-content:center;
+}
+
+.qrUrlText{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.4;
+  text-align:center;
+  word-break:break-all;
+}
+
+@media (max-width:520px){
+  .grid2,
+  .adminMiniGrid,
+  .sidebetGrid{
     grid-template-columns:1fr;
   }
 }
