@@ -179,7 +179,8 @@ h1{
   z-index:20;
 }
 
-.modalBackdrop{
+.modalBackdrop,
+.detailBackdrop{
   position:absolute;
   inset:0;
   background:rgba(3,7,12,.70);
@@ -256,4 +257,55 @@ h1{
 
 .field input::placeholder{
   color:rgba(255,255,255,.35);
+}
+
+.summaryCard{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.summaryItem{
+  padding:12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+}
+
+.summaryLabel{
+  font-size:10px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.summaryValue{
+  margin-top:4px;
+  font-size:14px;
+  font-weight:700;
+}
+
+.detailBreakdown{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.breakdownItem{
+  padding:12px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--line);
+}
+
+.breakdownTitle{
+  font-size:12px;
+  font-weight:700;
+}
+
+.breakdownMeta{
+  margin-top:6px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.35;
 }
