@@ -20,32 +20,29 @@
   </button>
 
   <main class="appShell">
-    <section class="board" aria-label="Dashboard">
-
-      <section id="timeCard" class="widget glass cardTime" aria-label="Tid och datum">
-        <div class="timeCardTop">
-          <button id="refreshBtn" class="refreshBtn" type="button" aria-label="Uppdatera">↻</button>
+    <aside class="hud" aria-label="Status">
+      <div class="hudTop">
+        <div class="clockWrap">
+          <div id="timeBig" class="timeBig">11:14</div>
+          <div id="dateBig" class="dateBig">Onsdag - 1 april</div>
         </div>
-        <div id="timeBig" class="timeBig">11:14</div>
-        <div id="dateBig" class="dateBig">Onsdag - 1 april</div>
-      </section>
 
-      <section id="profileCard" class="widget glass cardProfile" aria-label="Profil">
-        <div class="widgetTitle smallTitle">Profil</div>
-        <div class="profileCardBody">
+        <div class="profileWrap">
           <button id="profileCircleBtn" class="profileCircleBtn" type="button" aria-label="Välj profil">
             <span id="profileCircleText">SB</span>
           </button>
+
           <div class="profileLine">
             <button id="profileTabSB" class="profileMiniBtn active" type="button">SB</button>
             <span class="profileDot">•</span>
             <button id="profileTabJA" class="profileMiniBtn" type="button">JA</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="weatherCard" class="widget glass cardWeather" aria-label="Väder">
-        <div class="widgetTitle smallTitle">Väder</div>
+      <div class="hudBottom">
+        <button id="refreshBtn" class="refreshBtn" type="button" aria-label="Uppdatera">↻</button>
+
         <div id="weatherAmbient" class="weatherAmbient">
           <div class="weatherIconDot"></div>
           <div class="weatherText">
@@ -54,8 +51,10 @@
             <div id="weatherMeta" class="weatherMeta">...</div>
           </div>
         </div>
-      </section>
+      </div>
+    </aside>
 
+    <section class="board" aria-label="Dashboard">
       <button id="freeTextCard" class="widget glass cardFreeText" type="button">
         <div class="widgetTitle">Fritext</div>
         <div id="freeTextPreview" class="widgetTextPreview">Tryck för att skriva.</div>
@@ -89,11 +88,6 @@
           </div>
         </div>
       </section>
-
-      <button id="linksCard" class="widget solid solidBlue cardLinks" type="button">
-        <div class="widgetTitle">Länkar</div>
-        <div id="linksPreview" class="solidPreview"></div>
-      </button>
 
       <button id="imageOneCard" class="widget imageCard cardImageOne" type="button" aria-label="Bild 1">
         <img id="imageOnePreview" class="imagePreview hidden" alt="Bild 1" />
@@ -132,14 +126,8 @@
       </button>
 
       <section class="widget solid solidBlue cardCalendar" aria-label="Google Kalender">
-        <div class="widgetTitle">Kalender</div>
-        <div id="calendarCardBody" class="calendarCardBody">
-          <div id="calendarFallback" class="calendarFallback hidden">Kalender ej kopplad ännu</div>
-          <div id="calendarEmbedWrap" class="calendarEmbedWrap hidden">
-            <iframe id="calendarFrame" title="Google kalender" loading="lazy"></iframe>
-            <div class="calendarOverlay"></div>
-          </div>
-        </div>
+        <div class="widgetTitle">Idag</div>
+        <div id="calendarTodayPreview" class="calendarPreview"></div>
       </section>
     </section>
   </main>
