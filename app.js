@@ -9,52 +9,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const PROFILES = ["SB", "JA"];
+const PROFILE_NAMES = {
+  SB: "Sibbe",
+  JA: "Johan"
+};
+
 const TIMER_PRESETS = [2, 5, 15, 25];
-
-const GRID = {
-  cols: 11,
-  rows: 12,
-  cellW: 100,
-  cellH: 64,
-  gap: 14
-};
-
-const ALLOWED_SIZES = {
-  timeCard:      [[2,2]],
-  profileCard:   [[2,2]],
-  weatherCard:   [[2,2]],
-  freeTextCard:  [[3,4],[3,5],[3,6],[4,6]],
-  listsCard:     [[2,2],[2,3]],
-  timerCard:     [[2,3],[2,4],[3,4]],
-  linksCard:     [[2,3],[2,4],[3,4]],
-  imageOneCard:  [[3,2],[4,2],[4,3]],
-  imageTwoCard:  [[2,3],[2,4],[3,4]],
-  notesCard:     [[2,3],[2,4],[2,5]],
-  noticesCard:   [[4,3],[5,3],[5,4]],
-  trainingsCard: [[2,5],[2,6],[3,6]],
-  matchesCard:   [[2,4],[2,5],[3,5]],
-  calendarCard:  [[2,3],[3,3],[3,4]]
-};
-
-const DEFAULT_LAYOUT = {
-  timeCard:      { x: 0, y: 0, w: 2, h: 2, sizeIndex: 0 },
-  profileCard:   { x: 0, y: 2, w: 2, h: 2, sizeIndex: 0 },
-  weatherCard:   { x: 0, y: 4, w: 2, h: 2, sizeIndex: 0 },
-  freeTextCard:  { x: 2, y: 0, w: 3, h: 6, sizeIndex: 2 },
-  listsCard:     { x: 5, y: 0, w: 2, h: 2, sizeIndex: 0 },
-  timerCard:     { x: 7, y: 0, w: 2, h: 4, sizeIndex: 1 },
-  linksCard:     { x: 9, y: 0, w: 2, h: 4, sizeIndex: 1 },
-  imageOneCard:  { x: 5, y: 2, w: 4, h: 3, sizeIndex: 2 },
-  imageTwoCard:  { x: 9, y: 4, w: 2, h: 4, sizeIndex: 1 },
-  noticesCard:   { x: 0, y: 6, w: 5, h: 4, sizeIndex: 2 },
-  trainingsCard: { x: 5, y: 5, w: 2, h: 6, sizeIndex: 1 },
-  matchesCard:   { x: 7, y: 5, w: 2, h: 5, sizeIndex: 1 },
-  calendarCard:  { x: 7, y: 10, w: 3, h: 4, sizeIndex: 2 },
-  notesCard:     { x: 9, y: 8, w: 2, h: 4, sizeIndex: 1 }
-};
-
-const DEFAULT_CALENDAR_EMBEDS = {
-  SB: "https://calendar.google.com/calendar/embed?src=ZXJpY3Nzb25ib25pbmlAZ21haWwuY29t&mode=AGENDA&ctz=Europe%2FStockholm&hl=sv&bgcolor=%23ffffff&showTitle=0&showTabs=0&showNav=0&showPrint=0&showCalendars=0&showDate=0",
+const DEFAULT_ICS = {
+  SB: "https://calendar.google.com/calendar/ical/ericssonbonini%40gmail.com/public/basic.ics",
   JA: ""
 };
 
@@ -62,7 +24,6 @@ const DEFAULT_PROFILE_DATA = {
   freeText: "",
   notes: [],
   lists: [],
-  links: [],
   familyNotices: [],
   trainings: [],
   matches: [],
@@ -70,14 +31,13 @@ const DEFAULT_PROFILE_DATA = {
     one: "",
     two: ""
   },
-  calendarEmbedUrl: "",
-  timerPreset: 5,
-  layoutDesktop: DEFAULT_LAYOUT
+  calendarIcs: "",
+  timerPreset: 5
 };
 
 const state = {
   activeProfile: localStorage.getItem("livelydashsb_activeProfile") || "SB",
-  profileData: clone(DEFAULT_PROFILE_DATA),
+  profileData: { ...DEFAULT_PROFILE_DATA },
   unsubscribeProfile: null,
   openModalType: null,
   openModalMeta: null,
@@ -89,13 +49,10 @@ const state = {
   timerTick: null,
 
   qrMini: null,
-  qrLarge: null,
-
-  drag: null
+  qrLarge: null
 };
 
 const $ = (id) => document.getElementById(id);
-const board = $("board");
 
 const weatherTemp = $("weatherTemp");
 const weatherLabel = $("weatherLabel");
@@ -113,10 +70,10 @@ const refreshBtn = $("refreshBtn");
 const freeTextPreview = $("freeTextPreview");
 const listsPreview = $("listsPreview");
 const notesPreview = $("notesPreview");
-const linksPreview = $("linksPreview");
 const noticesPreview = $("noticesPreview");
 const trainingsPreview = $("trainingsPreview");
 const matchesPreview = $("matchesPreview");
+const calendarTodayPreview = $("calendarTodayPreview");
 
 const imageOnePreview = $("imageOnePreview");
 const imageOnePlaceholder = $("imageOnePlaceholder");
@@ -145,11 +102,7 @@ const qrUrlText = $("qrUrlText");
 const qrCanvasMini = $("qrCanvasMini");
 const qrCanvasLarge = $("qrCanvasLarge");
 
-const calendarFallback = $("calendarFallback");
-const calendarEmbedWrap = $("calendarEmbedWrap");
-const calendarFrame = $("calendarFrame");
-
-function clone(obj) {
+function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
@@ -157,46 +110,24 @@ function profileDocRef(profile) {
   return doc(db, "livelydashsb_profiles", profile);
 }
 
-function mergeLayout(layout) {
-  const merged = clone(DEFAULT_LAYOUT);
-  Object.entries(layout || {}).forEach(([key, value]) => {
-    if (!merged[key]) return;
-    merged[key] = {
-      ...merged[key],
-      ...value
-    };
-    const sizes = ALLOWED_SIZES[key] || [[merged[key].w, merged[key].h]];
-    const currentIndex = typeof merged[key].sizeIndex === "number" ? merged[key].sizeIndex : 0;
-    const safeIndex = Math.max(0, Math.min(sizes.length - 1, currentIndex));
-    merged[key].sizeIndex = safeIndex;
-    merged[key].w = sizes[safeIndex][0];
-    merged[key].h = sizes[safeIndex][1];
-  });
-  return merged;
-}
-
 function ensureProfileShape(data, profile) {
   const merged = {
-    ...clone(DEFAULT_PROFILE_DATA),
+    ...deepClone(DEFAULT_PROFILE_DATA),
     ...(data || {})
   };
 
   if (!Array.isArray(merged.notes)) merged.notes = [];
   if (!Array.isArray(merged.lists)) merged.lists = [];
-  if (!Array.isArray(merged.links)) merged.links = [];
   if (!Array.isArray(merged.familyNotices)) merged.familyNotices = [];
   if (!Array.isArray(merged.trainings)) merged.trainings = [];
   if (!Array.isArray(merged.matches)) merged.matches = [];
-
   if (!merged.images || typeof merged.images !== "object") {
     merged.images = { one: "", two: "" };
   }
 
-  if (!merged.calendarEmbedUrl) {
-    merged.calendarEmbedUrl = DEFAULT_CALENDAR_EMBEDS[profile] || "";
+  if (!merged.calendarIcs) {
+    merged.calendarIcs = DEFAULT_ICS[profile] || "";
   }
-
-  merged.layoutDesktop = mergeLayout(merged.layoutDesktop);
 
   const preset = Number(merged.timerPreset || 5);
   merged.timerPreset = TIMER_PRESETS.includes(preset) ? preset : 5;
@@ -211,15 +142,11 @@ async function bootstrap() {
   setupModalEvents();
   setupWidgetEvents();
   setupTimerEvents();
-  setupBoardInteractions();
 
   await ensureProfileDocument(state.activeProfile);
   listenToProfile(state.activeProfile);
   updateProfileUi();
   renderAll();
-
-  window.addEventListener("resize", handleResponsiveLayout);
-  handleResponsiveLayout();
 }
 
 async function ensureProfileDocument(profile) {
@@ -254,22 +181,21 @@ function listenToProfile(profile) {
 
     updateProfileUi();
     renderAll();
-    handleResponsiveLayout();
+    loadCalendarEvents();
   });
 }
 
 function updateProfileUi() {
   const active = state.activeProfile;
-  profileTabSB?.classList.toggle("active", active === "SB");
-  profileTabJA?.classList.toggle("active", active === "JA");
-  if (profileCircleText) profileCircleText.textContent = active;
+  profileTabSB.classList.toggle("active", active === "SB");
+  profileTabJA.classList.toggle("active", active === "JA");
+  profileCircleText.textContent = active;
 }
 
 function setupClock() {
   const updateClock = () => {
-    if (!timeBig || !dateBig) return;
-
     const now = new Date();
+
     timeBig.textContent = now.toLocaleTimeString("sv-SE", {
       hour: "2-digit",
       minute: "2-digit"
@@ -292,8 +218,6 @@ function capitalize(str) {
 }
 
 function setupWeather() {
-  if (!weatherTemp || !weatherLabel || !weatherMeta) return;
-
   const fallback = { lat: 59.3247, lon: 18.4304 };
 
   const fetchWeather = async (lat, lon) => {
@@ -350,8 +274,6 @@ function weatherCodeToLabel(code) {
 }
 
 function setupQr() {
-  if (!qrDock || !qrCanvasMini || !qrCanvasLarge || !qrUrlText || !qrModalRoot || typeof QRious === "undefined") return;
-
   const url = window.location.href;
   qrUrlText.textContent = url;
 
@@ -372,48 +294,48 @@ function setupQr() {
   });
 
   qrDock.addEventListener("click", openQrModal);
-  qrModalCloseBtn?.addEventListener("click", closeQrModal);
-  qrModalRoot.querySelector(".modalBackdrop")?.addEventListener("click", closeQrModal);
+  qrModalCloseBtn.addEventListener("click", closeQrModal);
+  qrModalRoot.querySelector(".modalBackdrop").addEventListener("click", closeQrModal);
 }
 
 function openQrModal() {
-  qrModalRoot?.classList.remove("hidden");
+  qrModalRoot.classList.remove("hidden");
 }
 
 function closeQrModal() {
-  qrModalRoot?.classList.add("hidden");
+  qrModalRoot.classList.add("hidden");
 }
 
 function setupModalEvents() {
-  modalCloseBtn?.addEventListener("click", closeModal);
-  modalRoot?.querySelector(".modalBackdrop")?.addEventListener("click", closeModal);
+  modalCloseBtn.addEventListener("click", closeModal);
+  modalRoot.querySelector(".modalBackdrop").addEventListener("click", closeModal);
 
-  modalSaveBtn?.addEventListener("click", saveCurrentModal);
-  modalDeleteBtn?.addEventListener("click", deleteCurrentModal);
+  modalSaveBtn.addEventListener("click", saveCurrentModal);
+  modalDeleteBtn.addEventListener("click", deleteCurrentModal);
 
-  profileCircleBtn?.addEventListener("click", () => {
-    profileModalRoot?.classList.remove("hidden");
+  profileCircleBtn.addEventListener("click", () => {
+    profileModalRoot.classList.remove("hidden");
   });
 
-  profileModalCloseBtn?.addEventListener("click", () => {
-    profileModalRoot?.classList.add("hidden");
+  profileModalCloseBtn.addEventListener("click", () => {
+    profileModalRoot.classList.add("hidden");
   });
 
-  profileModalRoot?.querySelector(".modalBackdrop")?.addEventListener("click", () => {
-    profileModalRoot?.classList.add("hidden");
+  profileModalRoot.querySelector(".modalBackdrop").addEventListener("click", () => {
+    profileModalRoot.classList.add("hidden");
   });
 
-  profileModalRoot?.querySelectorAll("[data-profile-pick]").forEach((btn) => {
+  profileModalRoot.querySelectorAll("[data-profile-pick]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await switchProfile(btn.dataset.profilePick);
-      profileModalRoot?.classList.add("hidden");
+      profileModalRoot.classList.add("hidden");
     });
   });
 
-  profileTabSB?.addEventListener("click", () => switchProfile("SB"));
-  profileTabJA?.addEventListener("click", () => switchProfile("JA"));
+  profileTabSB.addEventListener("click", () => switchProfile("SB"));
+  profileTabJA.addEventListener("click", () => switchProfile("JA"));
 
-  refreshBtn?.addEventListener("click", () => location.reload());
+  refreshBtn.addEventListener("click", () => location.reload());
 }
 
 async function switchProfile(profile) {
@@ -428,45 +350,33 @@ async function switchProfile(profile) {
 }
 
 function setupWidgetEvents() {
-  $("freeTextCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("freeText")));
-  $("listsCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("lists")));
-  $("linksCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("links")));
-  $("notesCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("notes")));
-  $("noticesCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("familyNotices")));
-  $("trainingsCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("trainings")));
-  $("matchesCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("matches")));
-  $("imageOneCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("images", { slot: "one" })));
-  $("imageTwoCard")?.addEventListener("click", (e) => guardCardClick(e, () => openWidgetModal("images", { slot: "two" })));
-}
-
-function guardCardClick(e, fn) {
-  if (window.innerWidth > 980 && state.drag?.moved) return;
-  if (e.target.closest(".resizeHandle")) return;
-  fn();
+  $("freeTextCard").addEventListener("click", () => openWidgetModal("freeText"));
+  $("listsCard").addEventListener("click", () => openWidgetModal("lists"));
+  $("notesCard").addEventListener("click", () => openWidgetModal("notes"));
+  $("noticesCard").addEventListener("click", () => openWidgetModal("familyNotices"));
+  $("trainingsCard").addEventListener("click", () => openWidgetModal("trainings"));
+  $("matchesCard").addEventListener("click", () => openWidgetModal("matches"));
+  $("imageOneCard").addEventListener("click", () => openWidgetModal("images", { slot: "one" }));
+  $("imageTwoCard").addEventListener("click", () => openWidgetModal("images", { slot: "two" }));
 }
 
 function renderAll() {
   renderFreeText();
   renderListsPreview();
   renderNotesPreview();
-  renderLinksPreview();
   renderFamilyNoticesPreview();
-  renderEventsPreview("trainings", trainingsPreview, 8);
-  renderEventsPreview("matches", matchesPreview, 6);
+  renderEventsPreview("trainings", trainingsPreview);
+  renderEventsPreview("matches", matchesPreview);
   renderImages();
-  renderCalendar();
   renderTimer();
 }
 
 function renderFreeText() {
-  if (!freeTextPreview) return;
   const value = String(state.profileData.freeText || "").trim();
   freeTextPreview.textContent = value || "Tryck för att skriva.";
 }
 
 function renderListsPreview() {
-  if (!listsPreview) return;
-
   const lists = [...(state.profileData.lists || [])];
   if (!lists.length) {
     listsPreview.innerHTML = `<div class="emptyMini">Tryck för att skapa listor</div>`;
@@ -476,7 +386,7 @@ function renderListsPreview() {
   const sorted = [
     ...lists.filter(i => !i.completed),
     ...lists.filter(i => i.completed)
-  ].slice(0, 4);
+  ].slice(0, 3);
 
   listsPreview.innerHTML = sorted.map((item) => {
     const subCount = Array.isArray(item.subtasks) ? item.subtasks.length : 0;
@@ -497,16 +407,14 @@ function renderListsPreview() {
 }
 
 function renderNotesPreview() {
-  if (!notesPreview) return;
-
-  const notes = (state.profileData.notes || []).slice(0, 5);
+  const notes = (state.profileData.notes || []).slice(0, 4);
   if (!notes.length) {
     notesPreview.innerHTML = `<div class="emptyMini">Tryck för att lägga till ämnen</div>`;
     return;
   }
 
   notesPreview.innerHTML = notes.map((note) => {
-    const snippet = String(note.text || "").trim().slice(0, 56);
+    const snippet = String(note.text || "").trim().slice(0, 42);
     return `
       <div>
         <div class="noteSubject">${escapeHtml(note.subject || "Ämne")}</div>
@@ -516,35 +424,8 @@ function renderNotesPreview() {
   }).join("");
 }
 
-function renderLinksPreview() {
-  if (!linksPreview) return;
-
-  const links = (state.profileData.links || []).slice(0, 6);
-  if (!links.length) {
-    linksPreview.innerHTML = `<div class="emptyMini bright">Tryck för att lägga till länkar</div>`;
-    return;
-  }
-
-  linksPreview.innerHTML = links.map((item) => `
-    <div class="linkPreviewRow" data-link-url="${escapeAttr(item.url || "")}">
-      <div class="solidMain">🔗 ${escapeHtml(item.name || "Länk")}</div>
-      <div class="solidSub">${escapeHtml(item.url || "")}</div>
-    </div>
-  `).join("");
-
-  linksPreview.querySelectorAll("[data-link-url]").forEach((row) => {
-    row.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const url = row.dataset.linkUrl;
-      if (url) window.open(url, "_blank");
-    });
-  });
-}
-
 function renderFamilyNoticesPreview() {
-  if (!noticesPreview) return;
-
-  const notices = (state.profileData.familyNotices || []).slice(0, 5);
+  const notices = (state.profileData.familyNotices || []).slice(0, 3);
   if (!notices.length) {
     noticesPreview.innerHTML = `<div class="emptyMini bright">Tryck för att lägga till notiser</div>`;
     return;
@@ -558,16 +439,14 @@ function renderFamilyNoticesPreview() {
   `).join("");
 }
 
-function renderEventsPreview(key, targetEl, limit = 6) {
-  if (!targetEl) return;
-
+function renderEventsPreview(key, targetEl) {
   const items = [...(state.profileData[key] || [])];
   if (!items.length) {
     targetEl.innerHTML = `<div class="emptyMini bright">Tryck för att lägga till</div>`;
     return;
   }
 
-  targetEl.innerHTML = items.slice(0, limit).map((item) => `
+  targetEl.innerHTML = items.slice(0, 5).map((item) => `
     <div>
       <div class="solidMain">${escapeHtml(buildEventLine(item))}</div>
       ${item.place ? `<div class="solidSub">${escapeHtml(item.place)}</div>` : ""}
@@ -589,8 +468,6 @@ function renderImages() {
 }
 
 function renderImageSlot(slot, imgEl, placeholderEl) {
-  if (!imgEl || !placeholderEl) return;
-
   const value = state.profileData.images?.[slot] || "";
   if (!value) {
     imgEl.classList.add("hidden");
@@ -598,19 +475,13 @@ function renderImageSlot(slot, imgEl, placeholderEl) {
     imgEl.removeAttribute("src");
     return;
   }
-
   imgEl.src = value;
   imgEl.classList.remove("hidden");
   placeholderEl.classList.add("hidden");
 }
 
 function setupTimerEvents() {
-  if (!timerCard) return;
-
-  timerCard.addEventListener("click", async (e) => {
-    if (e.target.closest(".resizeHandle")) return;
-    if (window.innerWidth > 980 && state.drag?.moved) return;
-
+  timerCard.addEventListener("click", async () => {
     if (state.timerRunning) {
       stopTimer(true);
     } else {
@@ -621,45 +492,44 @@ function setupTimerEvents() {
   timerCard.addEventListener("wheel", async (e) => {
     e.preventDefault();
     if (state.timerRunning) return;
-    cycleWidgetSize("timerCard", 1);
+    changeTimerPreset(e.deltaY > 0 ? 1 : -1);
+    await persistTimerPreset();
   }, { passive: false });
 
   timerCard.addEventListener("keydown", async (e) => {
+    if (state.timerRunning) return;
+
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      await changeTimerPreset(1);
+      changeTimerPreset(1);
+      await persistTimerPreset();
     }
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      await changeTimerPreset(-1);
+      changeTimerPreset(-1);
+      await persistTimerPreset();
     }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (state.timerRunning) {
-        stopTimer(true);
-      } else {
-        startTimer();
-      }
+      startTimer();
     }
   });
 }
 
-async function changeTimerPreset(delta) {
-  if (state.timerRunning) return;
+function changeTimerPreset(delta) {
   let idx = state.timerPresetIndex + delta;
   if (idx < 0) idx = TIMER_PRESETS.length - 1;
   if (idx >= TIMER_PRESETS.length) idx = 0;
   state.timerPresetIndex = idx;
   state.profileData.timerPreset = TIMER_PRESETS[idx];
   renderTimer();
+}
+
+async function persistTimerPreset() {
   await updateProfileData({
     timerPreset: state.profileData.timerPreset
   });
 }
 
 function renderTimer() {
-  if (!timerPresetText || !timerStatus || !timerProgress) return;
-
   const preset = TIMER_PRESETS[state.timerPresetIndex] || 5;
 
   if (!state.timerRunning) {
@@ -680,7 +550,6 @@ function renderTimer() {
 }
 
 function setTimerProgress(progress) {
-  if (!timerProgress) return;
   const radius = 94;
   const circumference = 2 * Math.PI * radius;
   timerProgress.style.strokeDasharray = `${circumference}`;
@@ -741,82 +610,55 @@ function playTimerDone() {
   } catch (_) {}
 }
 
-function renderCalendar() {
-  const url = String(state.profileData.calendarEmbedUrl || "").trim();
-
-  if (!calendarFrame || !calendarEmbedWrap || !calendarFallback) return;
-
-  if (!url) {
-    calendarEmbedWrap.classList.add("hidden");
-    calendarFallback.classList.remove("hidden");
-    return;
-  }
-
-  if (calendarFrame.src !== url) {
-    calendarFrame.src = url;
-  }
-  calendarFallback.classList.add("hidden");
-  calendarEmbedWrap.classList.remove("hidden");
-}
-
 function openWidgetModal(type, meta = null) {
-  if (!modalRoot || !modalTitle || !modalBody) return;
-
   state.openModalType = type;
   state.openModalMeta = meta;
-  modalDeleteBtn?.classList.add("hidden");
+  modalDeleteBtn.classList.add("hidden");
 
   if (type === "freeText") {
     modalTitle.textContent = "Fritext";
     modalBody.innerHTML = `
       <div class="fieldBlock">
         <label class="fieldLabel" for="freeTextInput">Text</label>
-        <textarea id="freeTextInput" rows="22" placeholder="Skriv här...">${escapeHtml(state.profileData.freeText || "")}</textarea>
+        <textarea id="freeTextInput" rows="18" placeholder="Skriv här...">${escapeHtml(state.profileData.freeText || "")}</textarea>
       </div>
     `;
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "notes") {
     modalTitle.textContent = "Anteckningar";
     modalBody.innerHTML = renderNotesEditor(state.profileData.notes || []);
     bindNotesEditor();
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "lists") {
     modalTitle.textContent = "Listor";
     modalBody.innerHTML = renderListsEditor(state.profileData.lists || []);
     bindListsEditor();
-    modalDeleteBtn?.classList.remove("hidden");
-  }
-
-  if (type === "links") {
-    modalTitle.textContent = "Länkar";
-    modalBody.innerHTML = renderLinksEditor(state.profileData.links || []);
-    bindLinksEditor();
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "familyNotices") {
     modalTitle.textContent = "Familjenotiser";
     modalBody.innerHTML = renderSimpleEntriesEditor(state.profileData.familyNotices || [], "notices");
     bindSimpleEntriesEditor("notices");
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "trainings") {
     modalTitle.textContent = "Träningar";
     modalBody.innerHTML = renderScheduleEditor(state.profileData.trainings || [], "trainings");
     bindScheduleEditor("trainings");
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "matches") {
     modalTitle.textContent = "Matcher";
     modalBody.innerHTML = renderScheduleEditor(state.profileData.matches || [], "matches");
     bindScheduleEditor("matches");
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   if (type === "images") {
@@ -824,7 +666,7 @@ function openWidgetModal(type, meta = null) {
     modalTitle.textContent = slot === "one" ? "Bild 1" : "Bild 2";
     modalBody.innerHTML = renderImageEditor(slot);
     bindImageEditor(slot);
-    modalDeleteBtn?.classList.remove("hidden");
+    modalDeleteBtn.classList.remove("hidden");
   }
 
   modalRoot.classList.remove("hidden");
@@ -833,8 +675,8 @@ function openWidgetModal(type, meta = null) {
 function closeModal() {
   state.openModalType = null;
   state.openModalMeta = null;
-  modalRoot?.classList.add("hidden");
-  if (modalBody) modalBody.innerHTML = "";
+  modalRoot.classList.add("hidden");
+  modalBody.innerHTML = "";
 }
 
 async function saveCurrentModal() {
@@ -855,12 +697,6 @@ async function saveCurrentModal() {
 
   if (type === "lists") {
     await updateProfileData({ lists: collectListsEditor() });
-    closeModal();
-    return;
-  }
-
-  if (type === "links") {
-    await updateProfileData({ links: collectLinksEditor() });
     closeModal();
     return;
   }
@@ -912,11 +748,6 @@ async function deleteCurrentModal() {
   }
   if (type === "lists") {
     await updateProfileData({ lists: [] });
-    closeModal();
-    return;
-  }
-  if (type === "links") {
-    await updateProfileData({ links: [] });
     closeModal();
     return;
   }
@@ -1173,88 +1004,6 @@ function collectListsEditor() {
   }).filter(item => item.title || item.subtasks.length);
 }
 
-function renderLinksEditor(items) {
-  const rows = items.length ? items : [{ name: "", url: "" }];
-  return `
-    <div class="rowStack">
-      <div class="helperText">Lägg till klickbara länkar.</div>
-      <div class="rowStack">
-        ${rows.map((item, idx) => `
-          <div class="entryCard" data-links-index="${idx}">
-            <div class="entryTop">
-              <div class="entryTitle">Länk ${idx + 1}</div>
-              <div class="entryActions">
-                <button class="iconMiniBtn" type="button" data-links-up="${idx}">↑</button>
-                <button class="iconMiniBtn" type="button" data-links-down="${idx}">↓</button>
-                <button class="iconMiniBtn" type="button" data-links-remove="${idx}">✕</button>
-              </div>
-            </div>
-            <div class="fieldBlock">
-              <label class="fieldLabel">Namn</label>
-              <input type="text" data-links-name="${idx}" value="${escapeAttr(item.name || "")}" placeholder="T.ex. Avanza">
-            </div>
-            <div class="fieldBlock">
-              <label class="fieldLabel">Länk</label>
-              <input type="text" data-links-url="${idx}" value="${escapeAttr(item.url || "")}" placeholder="https://...">
-            </div>
-          </div>
-        `).join("")}
-      </div>
-      <button id="addLinksBtn" class="ghostBtn" type="button">+ Lägg till länk</button>
-    </div>
-  `;
-}
-
-function bindLinksEditor() {
-  $("addLinksBtn")?.addEventListener("click", () => {
-    const items = collectLinksEditor();
-    items.push({ name: "", url: "" });
-    modalBody.innerHTML = renderLinksEditor(items);
-    bindLinksEditor();
-  });
-
-  modalBody.querySelectorAll("[data-links-remove]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.dataset.linksRemove);
-      const items = collectLinksEditor();
-      items.splice(idx, 1);
-      modalBody.innerHTML = renderLinksEditor(items.length ? items : []);
-      bindLinksEditor();
-    });
-  });
-
-  modalBody.querySelectorAll("[data-links-up]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.dataset.linksUp);
-      const items = collectLinksEditor();
-      if (idx <= 0) return;
-      [items[idx - 1], items[idx]] = [items[idx], items[idx - 1]];
-      modalBody.innerHTML = renderLinksEditor(items);
-      bindLinksEditor();
-    });
-  });
-
-  modalBody.querySelectorAll("[data-links-down]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.dataset.linksDown);
-      const items = collectLinksEditor();
-      if (idx >= items.length - 1) return;
-      [items[idx + 1], items[idx]] = [items[idx], items[idx + 1]];
-      modalBody.innerHTML = renderLinksEditor(items);
-      bindLinksEditor();
-    });
-  });
-}
-
-function collectLinksEditor() {
-  const rows = [...modalBody.querySelectorAll("[data-links-index]")];
-  return rows.map((_, idx) => {
-    const name = modalBody.querySelector(`[data-links-name="${idx}"]`)?.value?.trim() || "";
-    const url = modalBody.querySelector(`[data-links-url="${idx}"]`)?.value?.trim() || "";
-    return { name, url };
-  }).filter(item => item.name || item.url);
-}
-
 function renderSimpleEntriesEditor(items, key) {
   const rows = items.length ? items : [{ title: "", text: "" }];
   return `
@@ -1472,7 +1221,6 @@ function compressImageToDataUrl(file, maxSize = 1400, quality = 0.82) {
       const img = new Image();
       img.onload = () => {
         let { width, height } = img;
-
         if (width > height && width > maxSize) {
           height = Math.round((height * maxSize) / width);
           width = maxSize;
@@ -1480,13 +1228,11 @@ function compressImageToDataUrl(file, maxSize = 1400, quality = 0.82) {
           width = Math.round((width * maxSize) / height);
           height = maxSize;
         }
-
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
       img.onerror = reject;
@@ -1497,200 +1243,152 @@ function compressImageToDataUrl(file, maxSize = 1400, quality = 0.82) {
   });
 }
 
-function setupBoardInteractions() {
-  if (!board) return;
-  board.querySelectorAll(".widget").forEach((widget) => {
-    widget.addEventListener("pointerdown", onWidgetPointerDown);
-    widget.querySelector(".resizeHandle")?.addEventListener("pointerdown", onResizePointerDown);
-  });
-}
-
-function handleResponsiveLayout() {
-  if (!board) return;
-
-  const isMobile = window.innerWidth <= 980;
-
-  if (isMobile) {
-    board.style.height = "auto";
-    board.querySelectorAll(".widget").forEach((el) => {
-      el.style.left = "";
-      el.style.top = "";
-      el.style.width = "";
-      el.style.height = "";
-    });
+async function loadCalendarEvents() {
+  const icsUrl = String(state.profileData.calendarIcs || "").trim();
+  if (!icsUrl) {
+    calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Ingen kalenderlänk vald för ${escapeHtml(state.activeProfile)}</div>`;
     return;
   }
 
-  applyDesktopLayout();
+  calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Laddar dagens händelser...</div>`;
+
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(icsUrl)}`;
+    const res = await fetch(proxyUrl);
+    const icsText = await res.text();
+    const events = parseICS(icsText);
+    const todayEvents = filterEventsForToday(events);
+
+    if (!todayEvents.length) {
+      calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Inga händelser idag</div>`;
+      return;
+    }
+
+    calendarTodayPreview.innerHTML = todayEvents.slice(0, 5).map((item) => `
+      <div>
+        <div class="solidMain"><span class="calendarTime">${escapeHtml(item.time)}</span>${escapeHtml(item.summary)}</div>
+        ${item.location ? `<div class="solidSub">${escapeHtml(item.location)}</div>` : ""}
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error(err);
+    calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Kunde inte läsa kalendern just nu</div>`;
+  }
 }
 
-function applyDesktopLayout() {
-  const layout = state.profileData.layoutDesktop || DEFAULT_LAYOUT;
-  const boardWidth = (GRID.cols * GRID.cellW) + ((GRID.cols - 1) * GRID.gap);
-  const boardHeight = (GRID.rows * GRID.cellH) + ((GRID.rows - 1) * GRID.gap);
-
-  board.style.maxWidth = `${boardWidth}px`;
-  board.style.height = `${boardHeight}px`;
-
-  Object.entries(layout).forEach(([id, rect]) => {
-    const el = $(id);
-    if (!el) return;
-
-    const px = gridRectToPixels(rect);
-    el.style.left = `${px.left}px`;
-    el.style.top = `${px.top}px`;
-    el.style.width = `${px.width}px`;
-    el.style.height = `${px.height}px`;
+function parseICS(icsText) {
+  const rawLines = String(icsText || "").replace(/\r/g, "").split("\n");
+  const lines = [];
+  rawLines.forEach((line) => {
+    if (/^[ \t]/.test(line) && lines.length) {
+      lines[lines.length - 1] += line.trim();
+    } else {
+      lines.push(line);
+    }
   });
+
+  const events = [];
+  let current = null;
+
+  lines.forEach((line) => {
+    if (line === "BEGIN:VEVENT") {
+      current = {};
+      return;
+    }
+    if (line === "END:VEVENT") {
+      if (current) events.push(current);
+      current = null;
+      return;
+    }
+    if (!current) return;
+
+    const splitIndex = line.indexOf(":");
+    if (splitIndex === -1) return;
+    const rawKey = line.slice(0, splitIndex);
+    const value = line.slice(splitIndex + 1);
+    const key = rawKey.split(";")[0];
+
+    if (key === "SUMMARY") current.summary = decodeICSText(value);
+    if (key === "LOCATION") current.location = decodeICSText(value);
+    if (key === "DTSTART") current.dtstart = value;
+    if (key === "DTEND") current.dtend = value;
+  });
+
+  return events;
 }
 
-function gridRectToPixels(rect) {
-  return {
-    left: rect.x * (GRID.cellW + GRID.gap),
-    top: rect.y * (GRID.cellH + GRID.gap),
-    width: (rect.w * GRID.cellW) + ((rect.w - 1) * GRID.gap),
-    height: (rect.h * GRID.cellH) + ((rect.h - 1) * GRID.gap)
-  };
+function decodeICSText(value) {
+  return String(value || "")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\n/g, "\n");
 }
 
-function snapMoveRect(left, top, currentRect) {
-  const x = clamp(Math.round(left / (GRID.cellW + GRID.gap)), 0, GRID.cols - currentRect.w);
-  const y = clamp(Math.round(top / (GRID.cellH + GRID.gap)), 0, GRID.rows - currentRect.h);
-  return { ...currentRect, x, y };
+function filterEventsForToday(events) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+
+  return events
+    .map((event) => {
+      const start = parseICSDate(event.dtstart);
+      if (!start) return null;
+      if (
+        start.getFullYear() !== y ||
+        start.getMonth() !== m ||
+        start.getDate() !== d
+      ) return null;
+
+      return {
+        ...event,
+        start,
+        time: formatEventTime(start, event.dtstart)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
 }
 
-function onWidgetPointerDown(e) {
-  if (window.innerWidth <= 980) return;
-  if (e.target.closest(".resizeHandle")) return;
+function parseICSDate(value) {
+  if (!value) return null;
 
-  const widget = e.currentTarget;
-  const id = widget.dataset.widgetId;
-  if (!id) return;
-
-  const rect = state.profileData.layoutDesktop[id];
-  if (!rect) return;
-
-  state.drag = {
-    mode: "move",
-    widget,
-    id,
-    pointerId: e.pointerId,
-    startX: e.clientX,
-    startY: e.clientY,
-    startLeft: parseFloat(widget.style.left || 0),
-    startTop: parseFloat(widget.style.top || 0),
-    startRect: { ...rect },
-    moved: false
-  };
-
-  widget.classList.add("dragging");
-  widget.setPointerCapture(e.pointerId);
-  widget.addEventListener("pointermove", onPointerMove);
-  widget.addEventListener("pointerup", onPointerUp);
-  widget.addEventListener("pointercancel", onPointerUp);
-}
-
-function onResizePointerDown(e) {
-  if (window.innerWidth <= 980) return;
-  e.stopPropagation();
-
-  const widget = e.currentTarget.closest(".widget");
-  const id = widget?.dataset.widgetId;
-  if (!widget || !id) return;
-
-  const rect = state.profileData.layoutDesktop[id];
-  if (!rect) return;
-
-  state.drag = {
-    mode: "resize",
-    widget,
-    id,
-    pointerId: e.pointerId,
-    startRect: { ...rect },
-    moved: true
-  };
-
-  widget.classList.add("dragging");
-  widget.setPointerCapture(e.pointerId);
-  widget.addEventListener("pointermove", onPointerMove);
-  widget.addEventListener("pointerup", onPointerUp);
-  widget.addEventListener("pointercancel", onPointerUp);
-
-  cycleWidgetSize(id, 1, false);
-}
-
-function onPointerMove(e) {
-  if (!state.drag) return;
-  const drag = state.drag;
-
-  if (drag.mode === "move") {
-    const dx = e.clientX - drag.startX;
-    const dy = e.clientY - drag.startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) drag.moved = true;
-
-    const moved = snapMoveRect(drag.startLeft + dx, drag.startTop + dy, drag.startRect);
-    const px = gridRectToPixels(moved);
-    drag.widget.style.left = `${px.left}px`;
-    drag.widget.style.top = `${px.top}px`;
-  }
-}
-
-async function onPointerUp(e) {
-  if (!state.drag) return;
-
-  const drag = state.drag;
-  const widget = drag.widget;
-  const id = drag.id;
-
-  widget.classList.remove("dragging");
-  try { widget.releasePointerCapture?.(drag.pointerId); } catch {}
-
-  widget.removeEventListener("pointermove", onPointerMove);
-  widget.removeEventListener("pointerup", onPointerUp);
-  widget.removeEventListener("pointercancel", onPointerUp);
-
-  if (drag.mode === "move" && drag.moved) {
-    const rect = snapMoveRect(
-      parseFloat(widget.style.left || 0),
-      parseFloat(widget.style.top || 0),
-      state.profileData.layoutDesktop[id]
-    );
-    state.profileData.layoutDesktop[id] = rect;
-    await updateProfileData({ layoutDesktop: state.profileData.layoutDesktop });
+  if (/^\d{8}$/.test(value)) {
+    const y = Number(value.slice(0, 4));
+    const m = Number(value.slice(4, 6)) - 1;
+    const d = Number(value.slice(6, 8));
+    return new Date(y, m, d, 0, 0, 0);
   }
 
-  if (drag.mode === "resize") {
-    await updateProfileData({ layoutDesktop: state.profileData.layoutDesktop });
+  if (/^\d{8}T\d{6}Z$/.test(value)) {
+    const y = Number(value.slice(0, 4));
+    const mo = Number(value.slice(4, 6)) - 1;
+    const d = Number(value.slice(6, 8));
+    const hh = Number(value.slice(9, 11));
+    const mm = Number(value.slice(11, 13));
+    const ss = Number(value.slice(13, 15));
+    return new Date(Date.UTC(y, mo, d, hh, mm, ss));
   }
 
-  state.drag = null;
-}
-
-function cycleWidgetSize(id, delta = 1, persist = true) {
-  const rect = state.profileData.layoutDesktop[id];
-  const sizes = ALLOWED_SIZES[id];
-  if (!rect || !sizes || !sizes.length) return;
-
-  let nextIndex = (typeof rect.sizeIndex === "number" ? rect.sizeIndex : 0) + delta;
-  if (nextIndex < 0) nextIndex = sizes.length - 1;
-  if (nextIndex >= sizes.length) nextIndex = 0;
-
-  rect.sizeIndex = nextIndex;
-  rect.w = sizes[nextIndex][0];
-  rect.h = sizes[nextIndex][1];
-  rect.x = clamp(rect.x, 0, GRID.cols - rect.w);
-  rect.y = clamp(rect.y, 0, GRID.rows - rect.h);
-
-  state.profileData.layoutDesktop[id] = rect;
-  applyDesktopLayout();
-
-  if (persist) {
-    updateProfileData({ layoutDesktop: state.profileData.layoutDesktop });
+  if (/^\d{8}T\d{6}$/.test(value)) {
+    const y = Number(value.slice(0, 4));
+    const mo = Number(value.slice(4, 6)) - 1;
+    const d = Number(value.slice(6, 8));
+    const hh = Number(value.slice(9, 11));
+    const mm = Number(value.slice(11, 13));
+    const ss = Number(value.slice(13, 15));
+    return new Date(y, mo, d, hh, mm, ss);
   }
+
+  return null;
 }
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
+function formatEventTime(dateObj, rawValue) {
+  if (/^\d{8}$/.test(rawValue || "")) return "Heldag";
+  return dateObj.toLocaleTimeString("sv-SE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function escapeHtml(value) {
