@@ -1,209 +1,224 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-  />
-  <meta name="theme-color" content="#050b12" />
-  <title>livelydashsb</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="bgBase"></div>
-  <div class="blob blobMain"></div>
-  <div class="vignette"></div>
+import { db } from "./firebase-config.js";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-  <button id="qrDock" class="qrDock" type="button" aria-label="Visa QR">
-    <canvas id="qrCanvasMini" width="72" height="72"></canvas>
-  </button>
+document.addEventListener("DOMContentLoaded", () => {
 
-  <main class="appShell">
-    <section class="board" aria-label="Dashboard">
+  // =============================
+  // BASIC STATE
+  // =============================
 
-      <section id="timeCard" class="widget glass cardTime" aria-label="Tid och datum">
-        <div class="timeCardTop">
-          <button id="refreshBtn" class="refreshBtn" type="button" aria-label="Uppdatera">↻</button>
-        </div>
-        <div id="timeBig" class="timeBig">11:14</div>
-        <div id="dateBig" class="dateBig">Onsdag - 1 april</div>
-      </section>
+  const state = {
+    profile: localStorage.getItem("profile") || "SB",
+    data: {}
+  };
 
-      <section id="profileCard" class="widget glass cardProfile" aria-label="Profil">
-        <div class="widgetTitle smallTitle">Profil</div>
-        <div class="profileCardBody">
-          <button id="profileCircleBtn" class="profileCircleBtn" type="button" aria-label="Välj profil">
-            <span id="profileCircleText">SB</span>
-          </button>
-          <div class="profileLine">
-            <button id="profileTabSB" class="profileMiniBtn active" type="button">SB</button>
-            <span class="profileDot">•</span>
-            <button id="profileTabJA" class="profileMiniBtn" type="button">JA</button>
-          </div>
-        </div>
-      </section>
+  const $ = (id) => document.getElementById(id);
 
-      <section id="weatherCard" class="widget glass cardWeather" aria-label="Väder">
-        <div class="widgetTitle smallTitle">Väder</div>
-        <div id="weatherAmbient" class="weatherAmbient">
-          <div class="weatherIconDot"></div>
-          <div class="weatherText">
-            <div id="weatherTemp" class="weatherTemp">--°</div>
-            <div id="weatherLabel" class="weatherLabel">Laddar väder</div>
-            <div id="weatherMeta" class="weatherMeta">...</div>
-          </div>
-        </div>
-      </section>
+  // =============================
+  // CLOCK
+  // =============================
 
-      <button id="freeTextCard" class="widget glass cardFreeText" type="button">
-        <div class="widgetTitle">Fritext</div>
-        <div id="freeTextPreview" class="widgetTextPreview">Tryck för att skriva.</div>
-      </button>
+  function startClock() {
+    const update = () => {
+      const now = new Date();
 
-      <button id="listsCard" class="widget glass cardLists" type="button">
-        <div class="widgetTitle">Listor</div>
-        <div id="listsPreview" class="listsPreview"></div>
-      </button>
+      $("timeBig").textContent =
+        now.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 
-      <section id="timerCard" class="widget glass cardTimer" tabindex="0" aria-label="Timer">
-        <div class="timerArea">
-          <div class="timerRingWrap">
-            <svg class="timerSvg" viewBox="0 0 220 220" aria-hidden="true">
-              <defs>
-                <linearGradient id="timerStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#5cefff"></stop>
-                  <stop offset="50%" stop-color="#d850ff"></stop>
-                  <stop offset="100%" stop-color="#ff8b3e"></stop>
-                </linearGradient>
-              </defs>
-              <circle class="timerTrack" cx="110" cy="110" r="94"></circle>
-              <circle id="timerProgress" class="timerProgress" cx="110" cy="110" r="94"></circle>
-            </svg>
+      $("dateBig").textContent =
+        now.toLocaleDateString("sv-SE", {
+          weekday: "long",
+          day: "numeric",
+          month: "long"
+        });
+    };
 
-            <div class="timerCenter">
-              <div class="timerMiniLabel">TIMER</div>
-              <div id="timerPresetText" class="timerPresetText">5m</div>
-              <div id="timerStatus" class="timerStatus">Tryck för att starta</div>
-            </div>
-          </div>
-        </div>
-      </section>
+    update();
+    setInterval(update, 1000);
+  }
 
-      <button id="linksCard" class="widget solid solidBlue cardLinks" type="button">
-        <div class="widgetTitle">Länkar</div>
-        <div id="linksPreview" class="solidPreview"></div>
-      </button>
+  // =============================
+  // WEATHER
+  // =============================
 
-      <button id="imageOneCard" class="widget imageCard cardImageOne" type="button" aria-label="Bild 1">
-        <img id="imageOnePreview" class="imagePreview hidden" alt="Bild 1" />
-        <div id="imageOnePlaceholder" class="imagePlaceholder">
-          <div class="imagePlaceholderLabel">Bild 1</div>
-          <div class="imagePlaceholderSub">Tryck för att lägga till</div>
-        </div>
-      </button>
+  async function loadWeather() {
+    try {
+      const res = await fetch(
+        "https://api.open-meteo.com/v1/forecast?latitude=59.3&longitude=18.0&current=temperature_2m,weather_code"
+      );
+      const data = await res.json();
 
-      <button id="imageTwoCard" class="widget imageCard cardImageTwo" type="button" aria-label="Bild 2">
-        <img id="imageTwoPreview" class="imagePreview hidden" alt="Bild 2" />
-        <div id="imageTwoPlaceholder" class="imagePlaceholder">
-          <div class="imagePlaceholderLabel">Bild 2</div>
-          <div class="imagePlaceholderSub">Tryck för att lägga till</div>
-        </div>
-      </button>
+      $("weatherTemp").textContent =
+        Math.round(data.current.temperature_2m) + "°";
 
-      <button id="notesCard" class="widget glass cardNotes" type="button">
-        <div class="widgetTitle">Anteckningar</div>
-        <div id="notesPreview" class="notesPreview"></div>
-      </button>
+      $("weatherLabel").textContent = "Nu";
+      $("weatherMeta").textContent = "Stockholm";
 
-      <button id="noticesCard" class="widget solid solidPink cardNotices" type="button">
-        <div class="widgetTitle">Familjenotiser</div>
-        <div id="noticesPreview" class="solidPreview"></div>
-      </button>
+    } catch {
+      $("weatherTemp").textContent = "--°";
+    }
+  }
 
-      <button id="trainingsCard" class="widget solid solidBlue cardTrainings" type="button">
-        <div class="widgetTitle">Träningar</div>
-        <div id="trainingsPreview" class="solidPreview"></div>
-      </button>
+  // =============================
+  // FIREBASE
+  // =============================
 
-      <button id="matchesCard" class="widget solid solidBlue cardMatches" type="button">
-        <div class="widgetTitle">Matcher</div>
-        <div id="matchesPreview" class="solidPreview"></div>
-      </button>
+  const ref = doc(db, "dashboard", state.profile);
 
-      <section class="widget solid solidBlue cardCalendar" aria-label="Google Kalender">
-        <div class="widgetTitle">Kalender</div>
-        <div id="calendarCardBody" class="calendarCardBody">
-          <div id="calendarFallback" class="calendarFallback hidden">Kalender ej kopplad ännu</div>
-          <div id="calendarEmbedWrap" class="calendarEmbedWrap hidden">
-            <iframe id="calendarFrame" title="Google kalender" loading="lazy"></iframe>
-            <div class="calendarOverlay"></div>
-          </div>
-        </div>
-      </section>
-    </section>
-  </main>
+  async function initFirebase() {
+    const snap = await getDoc(ref);
 
-  <div id="modalRoot" class="modalRoot hidden" aria-hidden="true">
-    <div class="modalBackdrop"></div>
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        notes: [],
+        matches: [],
+        trainings: []
+      });
+    }
 
-    <div class="modalPanel">
-      <div class="modalHead">
-        <div>
-          <div class="modalMini">WIDGET</div>
-          <h2 id="modalTitle">Redigera</h2>
-        </div>
-        <button id="modalCloseBtn" class="modalCloseBtn" type="button" aria-label="Stäng">✕</button>
-      </div>
+    onSnapshot(ref, (snap) => {
+      state.data = snap.data();
+      renderAll();
+    });
+  }
 
-      <div id="modalBody" class="modalBody"></div>
+  // =============================
+  // RENDER
+  // =============================
 
-      <div class="modalFoot">
-        <button id="modalDeleteBtn" class="ghostBtn hidden" type="button">Rensa</button>
-        <button id="modalSaveBtn" class="mainBtn" type="button">Spara</button>
-      </div>
-    </div>
-  </div>
+  function renderAll() {
+    renderNotes();
+    renderMatches();
+    renderTrainings();
+  }
 
-  <div id="profileModalRoot" class="modalRoot hidden" aria-hidden="true">
-    <div class="modalBackdrop"></div>
+  function renderNotes() {
+    const el = $("notesPreview");
+    const data = state.data.notes || [];
 
-    <div class="profileModalPanel">
-      <div class="modalHead compact">
-        <div>
-          <div class="modalMini">PROFIL</div>
-          <h2>Välj profil</h2>
-        </div>
-        <button id="profileModalCloseBtn" class="modalCloseBtn" type="button" aria-label="Stäng">✕</button>
-      </div>
+    el.innerHTML = data.length
+      ? data.map(n => `<div>${n}</div>`).join("")
+      : "Tomt";
+  }
 
-      <div class="profileModalBody">
-        <button data-profile-pick="SB" class="profilePickBtn" type="button">SB</button>
-        <button data-profile-pick="JA" class="profilePickBtn" type="button">JA</button>
-      </div>
-    </div>
-  </div>
+  function renderMatches() {
+    const el = $("matchesPreview");
+    const data = state.data.matches || [];
 
-  <div id="qrModalRoot" class="modalRoot hidden" aria-hidden="true">
-    <div class="modalBackdrop"></div>
+    el.innerHTML = data.length
+      ? data.map(n => `<div>${n}</div>`).join("")
+      : "Inga matcher";
+  }
 
-    <div class="profileModalPanel qrPanel">
-      <div class="modalHead compact">
-        <div>
-          <div class="modalMini">QR</div>
-          <h2>Scanna för att öppna</h2>
-        </div>
-        <button id="qrModalCloseBtn" class="modalCloseBtn" type="button" aria-label="Stäng">✕</button>
-      </div>
+  function renderTrainings() {
+    const el = $("trainingsPreview");
+    const data = state.data.trainings || [];
 
-      <div class="qrModalBody">
-        <canvas id="qrCanvasLarge" width="240" height="240"></canvas>
-        <div id="qrUrlText" class="qrUrlText"></div>
-      </div>
-    </div>
-  </div>
+    el.innerHTML = data.length
+      ? data.map(n => `<div>${n}</div>`).join("")
+      : "Inga träningar";
+  }
 
-  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+  // =============================
+  // CLICK EVENTS (FIXED!)
+  // =============================
+
+  function bindClicks() {
+    $("notesCard").onclick = () => openModal("notes");
+    $("matchesCard").onclick = () => openModal("matches");
+    $("trainingsCard").onclick = () => openModal("trainings");
+    $("listsCard").onclick = () => openModal("lists");
+    $("freeTextCard").onclick = () => openModal("freeText");
+  }
+
+  // =============================
+  // MODAL
+  // =============================
+
+  function openModal(type) {
+    const root = $("modalRoot");
+    const body = $("modalBody");
+
+    root.classList.remove("hidden");
+
+    if (type === "notes") {
+      body.innerHTML = `
+        <textarea id="modalInput"></textarea>
+      `;
+    }
+
+    $("modalSaveBtn").onclick = async () => {
+      const value = $("modalInput").value;
+
+      const updated = [...(state.data[type] || []), value];
+
+      await updateDoc(ref, {
+        [type]: updated,
+        updatedAt: serverTimestamp()
+      });
+
+      root.classList.add("hidden");
+    };
+  }
+
+  $("modalCloseBtn").onclick = () =>
+    $("modalRoot").classList.add("hidden");
+
+  // =============================
+  // TIMER FIX
+  // =============================
+
+  function fixTimerSize() {
+    const svg = document.querySelector(".timerSvg");
+    if (!svg) return;
+
+    svg.style.width = "80%";
+    svg.style.height = "80%";
+  }
+
+  // =============================
+  // CALENDAR FIX
+  // =============================
+
+  function fixCalendar() {
+    const frame = $("calendarFrame");
+    if (!frame) return;
+
+    frame.src =
+      "https://calendar.google.com/calendar/embed?src=ericssonbonini@gmail.com&mode=AGENDA&ctz=Europe%2FStockholm";
+
+    $("calendarEmbedWrap").classList.remove("hidden");
+  }
+
+  // =============================
+  // REFRESH BUTTON FIX
+  // =============================
+
+  function moveRefresh() {
+    const btn = $("refreshBtn");
+    btn.style.position = "fixed";
+    btn.style.top = "20px";
+    btn.style.right = "20px";
+    btn.style.zIndex = "9999";
+  }
+
+  // =============================
+  // INIT
+  // =============================
+
+  startClock();
+  loadWeather();
+  initFirebase();
+  bindClicks();
+  fixTimerSize();
+  fixCalendar();
+  moveRefresh();
+
+});
