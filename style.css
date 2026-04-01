@@ -2,22 +2,18 @@
   --bg:#050b12;
   --text:#f5f7fb;
   --muted:rgba(255,255,255,.62);
-  --muted2:rgba(255,255,255,.38);
 
-  --glass-bg:rgba(10,16,24,.28);
   --glass-border:rgba(255,255,255,.05);
 
   --solid-blue:rgba(2,53,71,.9);
-  --solid-pink:rgba(201,78,145,.9);
+  --solid-pink:rgba(164,62,114,.88);
 
   --cyan:#3af1ff;
   --pink:#d74fff;
   --orange:#ff8f43;
 
-  --hud-w:300px;
-  --board-w:940px;
-  --board-h:720px;
-  --gap:12px;
+  --board-w:1340px;
+  --gap:14px;
 }
 
 *{
@@ -79,8 +75,8 @@ textarea::placeholder{
 
 .blob{
   position:fixed;
-  width:920px;
-  height:920px;
+  width:1000px;
+  height:1000px;
   border-radius:50%;
   filter:blur(120px);
   pointer-events:none;
@@ -89,11 +85,11 @@ textarea::placeholder{
 
 .blobMain{
   left:-180px;
-  top:-40px;
+  top:-60px;
   background:
     radial-gradient(circle at center,
-      rgba(33,244,255,.28) 0%,
-      rgba(33,244,255,.16) 30%,
+      rgba(33,244,255,.30) 0%,
+      rgba(33,244,255,.17) 30%,
       rgba(33,244,255,.08) 48%,
       rgba(33,244,255,0) 70%);
   animation:blobFloat 18s ease-in-out infinite;
@@ -105,15 +101,15 @@ textarea::placeholder{
     opacity:.95;
   }
   25%{
-    transform:translate3d(60px,20px,0) scale(1.08);
+    transform:translate3d(70px,30px,0) scale(1.08);
     opacity:1;
   }
   50%{
-    transform:translate3d(120px,70px,0) scale(1.16);
-    opacity:.9;
+    transform:translate3d(130px,80px,0) scale(1.16);
+    opacity:.92;
   }
   75%{
-    transform:translate3d(50px,110px,0) scale(1.06);
+    transform:translate3d(55px,120px,0) scale(1.07);
     opacity:1;
   }
 }
@@ -132,175 +128,48 @@ textarea::placeholder{
   width:100%;
   height:100vh;
   overflow:hidden;
+  padding:28px 28px 28px 28px;
 }
 
 .qrDock{
   position:fixed;
-  top:24px;
-  left:24px;
-  width:90px;
-  height:90px;
+  right:18px;
+  bottom:18px;
+  width:84px;
+  height:84px;
   display:grid;
   place-items:center;
-  background:rgba(8,14,22,.58);
-  border:1px solid rgba(255,255,255,.06);
-  backdrop-filter:blur(16px);
-  z-index:6;
+  z-index:10;
 }
 
 #qrCanvasMini,
 #qrCanvasLarge{
   background:#fff;
   padding:6px;
-}
-
-.hud{
-  position:fixed;
-  left:32px;
-  bottom:34px;
-  width:var(--hud-w);
-  display:flex;
-  flex-direction:column;
-  gap:22px;
-  z-index:5;
-}
-
-.hudTop{
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-.clockWrap{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-
-.timeBig{
-  font-size:60px;
-  line-height:.94;
-  font-weight:900;
-  letter-spacing:-.06em;
-}
-
-.dateBig{
-  font-size:19px;
-  line-height:1.05;
-  color:rgba(255,255,255,.92);
-  font-weight:800;
-  letter-spacing:-.03em;
-}
-
-.profileWrap{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.profileCircleBtn{
-  width:42px;
-  height:42px;
-  border:1px solid var(--cyan);
-  display:grid;
-  place-items:center;
-  font-size:13px;
-  background:rgba(0,0,0,.12);
-  box-shadow:0 0 16px rgba(58,241,255,.12);
-  flex-shrink:0;
-}
-
-.profileLine{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-weight:800;
-}
-
-.profileMiniBtn{
-  padding:0;
-  font-size:16px;
-  color:rgba(255,255,255,.4);
-}
-
-.profileMiniBtn.active{
-  color:var(--cyan);
-}
-
-.profileDot{
-  color:rgba(255,255,255,.4);
-}
-
-.hudBottom{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.refreshBtn{
-  width:34px;
-  height:34px;
-  display:grid;
-  place-items:center;
-  border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.02);
-  color:var(--muted);
-}
-
-.weatherAmbient{
-  display:flex;
-  align-items:flex-start;
-  gap:14px;
-}
-
-.weatherIconDot{
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:#f0d15c;
-  box-shadow:0 0 18px rgba(240,209,92,.16);
-  flex-shrink:0;
-  margin-top:3px;
-}
-
-.weatherTemp{
-  font-size:18px;
-  font-weight:800;
-  line-height:1;
-}
-
-.weatherLabel{
-  margin-top:3px;
-  font-size:12px;
-  color:rgba(255,255,255,.9);
-}
-
-.weatherMeta{
-  margin-top:3px;
-  font-size:10px;
-  color:var(--muted);
-  line-height:1.35;
+  border-radius:0;
 }
 
 .board{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:var(--board-w);
-  height:var(--board-h);
-  transform:translate(-4%, -50%);
+  width:min(100%, var(--board-w));
+  margin:0 auto;
+  height:calc(100vh - 56px);
+  display:grid;
+  grid-template-columns:240px 310px 250px 250px 250px;
+  grid-template-rows:160px 150px 190px 190px 230px;
+  gap:var(--gap);
+  align-content:start;
 }
 
 .widget{
-  position:absolute;
   overflow:hidden;
   text-align:left;
   border-radius:0;
+  position:relative;
 }
 
 .glass{
   background:
-    linear-gradient(180deg, rgba(10,16,24,.20), rgba(10,16,24,.12));
+    linear-gradient(180deg, rgba(10,16,24,.22), rgba(10,16,24,.14));
   border:1px solid var(--glass-border);
   backdrop-filter:blur(18px) saturate(130%);
   box-shadow:
@@ -353,7 +222,7 @@ textarea::placeholder{
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
-  padding:12px;
+  padding:14px;
   background:linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,.28));
 }
 
@@ -377,6 +246,10 @@ textarea::placeholder{
   margin-bottom:14px;
 }
 
+.smallTitle{
+  font-size:17px;
+}
+
 .widgetTextPreview{
   position:relative;
   z-index:1;
@@ -385,87 +258,200 @@ textarea::placeholder{
   line-height:1.45;
 }
 
+/* Grid placement */
+.cardTime{
+  grid-column:1;
+  grid-row:1;
+  padding:18px 16px;
+}
+
+.cardProfile{
+  grid-column:1;
+  grid-row:2;
+  padding:16px;
+}
+
+.cardWeather{
+  grid-column:1;
+  grid-row:3;
+  padding:16px;
+}
+
 .cardFreeText{
-  left:0;
-  top:0;
-  width:270px;
-  height:410px;
-  padding:24px 16px;
+  grid-column:2;
+  grid-row:1 / span 3;
+  padding:22px 18px;
 }
 
 .cardLists{
-  left:282px;
-  top:0;
-  width:260px;
-  height:154px;
+  grid-column:3;
+  grid-row:1;
   padding:16px;
 }
 
 .cardTimer{
-  left:556px;
-  top:0;
-  width:300px;
-  height:154px;
+  grid-column:4;
+  grid-row:1;
 }
 
-.cardImageOne{
-  left:282px;
-  top:166px;
-  width:140px;
-  height:180px;
-}
-
-.cardImageTwo{
-  left:434px;
-  top:166px;
-  width:108px;
-  height:180px;
-}
-
-.cardNotes{
-  left:556px;
-  top:166px;
-  width:300px;
-  height:312px;
-  padding:20px 16px;
-}
-
-.cardNotices{
-  left:0;
-  top:422px;
-  width:270px;
-  height:198px;
+.cardLinks{
+  grid-column:5;
+  grid-row:1 / span 2;
   padding:16px;
 }
 
+.cardImageOne{
+  grid-column:3 / span 2;
+  grid-row:2;
+}
+
+.cardImageTwo{
+  grid-column:5;
+  grid-row:3;
+}
+
+.cardNotes{
+  grid-column:5;
+  grid-row:4 / span 2;
+  padding:18px 16px;
+}
+
+.cardNotices{
+  grid-column:1 / span 2;
+  grid-row:4 / span 2;
+  padding:18px 16px;
+}
+
 .cardTrainings{
-  left:282px;
-  top:358px;
-  width:270px;
-  height:168px;
+  grid-column:3;
+  grid-row:3 / span 3;
   padding:16px;
 }
 
 .cardMatches{
-  left:282px;
-  top:538px;
-  width:270px;
-  height:140px;
+  grid-column:4;
+  grid-row:3 / span 2;
   padding:16px;
 }
 
 .cardCalendar{
-  left:566px;
-  top:490px;
-  width:290px;
-  height:188px;
+  grid-column:4;
+  grid-row:5;
   padding:16px;
+}
+
+.timeCardTop{
+  display:flex;
+  justify-content:flex-start;
+  margin-bottom:10px;
+}
+
+.refreshBtn{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.02);
+  color:var(--muted);
+}
+
+.timeBig{
+  font-size:66px;
+  line-height:.92;
+  font-weight:900;
+  letter-spacing:-.06em;
+}
+
+.dateBig{
+  margin-top:6px;
+  font-size:22px;
+  line-height:1.05;
+  color:rgba(255,255,255,.92);
+  font-weight:800;
+  letter-spacing:-.03em;
+}
+
+.profileCardBody{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  justify-content:center;
+  height:calc(100% - 34px);
+}
+
+.profileCircleBtn{
+  width:52px;
+  height:52px;
+  border:1px solid var(--cyan);
+  display:grid;
+  place-items:center;
+  font-size:15px;
+  background:rgba(0,0,0,.12);
+  box-shadow:0 0 16px rgba(58,241,255,.12);
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.profileLine{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:800;
+}
+
+.profileMiniBtn{
+  padding:0;
+  font-size:18px;
+  color:rgba(255,255,255,.4);
+}
+
+.profileMiniBtn.active{
+  color:var(--cyan);
+}
+
+.profileDot{
+  color:rgba(255,255,255,.4);
+}
+
+.weatherAmbient{
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+}
+
+.weatherIconDot{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#f0d15c;
+  box-shadow:0 0 18px rgba(240,209,92,.16);
+  flex-shrink:0;
+  margin-top:3px;
+}
+
+.weatherTemp{
+  font-size:26px;
+  font-weight:800;
+  line-height:1;
+}
+
+.weatherLabel{
+  margin-top:4px;
+  font-size:13px;
+  color:rgba(255,255,255,.9);
+}
+
+.weatherMeta{
+  margin-top:4px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.35;
 }
 
 .listsPreview,
 .notesPreview,
-.solidPreview,
-.calendarPreview{
+.solidPreview{
   position:relative;
   z-index:1;
   display:flex;
@@ -515,18 +501,14 @@ textarea::placeholder{
 .solidMain{
   font-size:14px;
   font-weight:700;
+  line-height:1.25;
 }
 
 .solidSub{
   margin-top:3px;
   font-size:12px;
   color:rgba(255,255,255,.82);
-}
-
-.calendarTime{
-  display:inline-block;
-  min-width:52px;
-  font-weight:800;
+  line-height:1.3;
 }
 
 .emptyMini{
@@ -548,8 +530,8 @@ textarea::placeholder{
 
 .timerRingWrap{
   position:relative;
-  width:148px;
-  height:148px;
+  width:164px;
+  height:164px;
   display:grid;
   place-items:center;
 }
@@ -579,8 +561,8 @@ textarea::placeholder{
 .timerCenter{
   position:relative;
   z-index:1;
-  width:112px;
-  height:112px;
+  width:122px;
+  height:122px;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -601,7 +583,7 @@ textarea::placeholder{
 
 .timerPresetText{
   margin-top:4px;
-  font-size:28px;
+  font-size:30px;
   line-height:1;
   font-weight:900;
   letter-spacing:-.05em;
@@ -611,6 +593,44 @@ textarea::placeholder{
   margin-top:4px;
   font-size:10px;
   color:var(--muted);
+}
+
+.calendarCardBody{
+  position:relative;
+  height:calc(100% - 42px);
+  overflow:hidden;
+}
+
+.calendarEmbedWrap{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+}
+
+.calendarEmbedWrap iframe{
+  position:absolute;
+  inset:-118px 0 -310px 0;
+  width:100%;
+  height:760px;
+  border:0;
+  filter:grayscale(.08) contrast(.95) brightness(.88);
+  pointer-events:none;
+}
+
+.calendarOverlay{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg, rgba(3,10,16,.78) 0%, rgba(3,10,16,.56) 18%, rgba(3,10,16,.28) 36%, rgba(3,10,16,.18) 100%);
+  pointer-events:none;
+}
+
+.calendarFallback{
+  display:grid;
+  place-items:center;
+  height:100%;
+  color:rgba(255,255,255,.78);
+  font-size:13px;
 }
 
 .modalRoot{
@@ -737,6 +757,7 @@ textarea::placeholder{
   font-size:28px;
   font-weight:900;
   background:rgba(255,255,255,.02);
+  border-radius:50%;
 }
 
 .qrModalBody{
@@ -843,120 +864,83 @@ textarea::placeholder{
   display:none !important;
 }
 
-/* Mobil */
-@media (max-width: 900px){
+/* Mobile */
+@media (max-width: 980px){
   body{
     overflow:auto;
   }
 
   .appShell{
-    min-height:100vh;
     height:auto;
+    min-height:100vh;
+    padding:18px 14px 110px;
     overflow:visible;
-    padding:104px 16px 20px;
   }
 
   .qrDock{
-    top:14px;
-    left:14px;
-    width:74px;
-    height:74px;
-  }
-
-  .hud{
-    position:relative;
-    left:auto;
-    bottom:auto;
-    width:100%;
-    margin-bottom:18px;
-  }
-
-  .hudTop{
-    gap:12px;
-  }
-
-  .timeBig{
-    font-size:42px;
-  }
-
-  .dateBig{
-    font-size:16px;
-  }
-
-  .profileWrap{
-    gap:10px;
-  }
-
-  .profileMiniBtn{
-    font-size:15px;
-  }
-
-  .hudBottom{
-    gap:10px;
-  }
-
-  .weatherTemp{
-    font-size:17px;
+    right:12px;
+    bottom:12px;
+    width:72px;
+    height:72px;
   }
 
   .board{
-    position:relative;
-    left:auto;
-    top:auto;
     width:100%;
     height:auto;
-    transform:none;
-    display:grid;
     grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
     gap:12px;
   }
 
   .widget{
-    position:relative;
-    left:auto !important;
-    top:auto !important;
-    width:auto !important;
-    height:auto !important;
-    min-height:154px;
+    min-height:160px;
   }
 
-  .cardFreeText{
-    min-height:260px;
-  }
-
-  .cardLists,
-  .cardTimer{
-    min-height:170px;
-  }
-
-  .cardImageOne,
-  .cardImageTwo{
-    min-height:150px;
-  }
-
-  .cardNotes{
-    min-height:250px;
-  }
-
-  .cardNotices,
-  .cardTrainings,
-  .cardMatches,
-  .cardCalendar{
-    min-height:180px;
-  }
-
+  .cardTime,
+  .cardProfile,
+  .cardWeather,
   .cardFreeText,
   .cardLists,
+  .cardTimer,
+  .cardLinks,
+  .cardImageOne,
+  .cardImageTwo,
   .cardNotes,
   .cardNotices,
   .cardTrainings,
   .cardMatches,
   .cardCalendar{
-    padding:16px 14px;
+    grid-column:auto !important;
+    grid-row:auto !important;
   }
 
-  .cardTimer{
-    padding:0;
+  .cardFreeText,
+  .cardNotices{
+    min-height:240px;
+  }
+
+  .cardTrainings{
+    min-height:300px;
+  }
+
+  .cardMatches,
+  .cardCalendar,
+  .cardLinks,
+  .cardNotes{
+    min-height:220px;
+  }
+
+  .cardImageOne,
+  .cardImageTwo{
+    min-height:180px;
+  }
+
+  .timeBig{
+    font-size:48px;
+  }
+
+  .dateBig{
+    font-size:18px;
   }
 
   .grid3{
@@ -964,7 +948,7 @@ textarea::placeholder{
   }
 
   .modalPanel{
-    width:calc(100vw - 20px);
-    height:calc(100vh - 20px);
+    width:calc(100vw - 16px);
+    height:calc(100vh - 16px);
   }
 }
