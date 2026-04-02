@@ -509,7 +509,8 @@ textarea::placeholder{
 
 .cardMatches{
   left:calc((var(--card-w) * 2) + (var(--gap) * 2));
-  top:calc((var(--size-m) * 2) + (var(--gap) * 2));
+  top:calc(var(--size-m) + var(--size-l) + (var(--gap) * 2));
+}
   width:var(--card-w);
   height:var(--size-m);
   padding:18px;
