@@ -816,7 +816,7 @@ function renderSingleNoteEditor(note, idx) {
       </div>
       <div class="fieldBlock">
         <label class="fieldLabel">Text</label>
-        <textarea rows="12" data-note-text="${idx}" placeholder="Skriv anteckning...">${escapeHtml(note.text || "")}</textarea>
+        <textarea rows="6" data-note-text="${idx}" placeholder="Skriv anteckning...">${escapeHtml(note.text || "")}</textarea>
       </div>
     </div>
   `;
