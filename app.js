@@ -27,6 +27,7 @@ const DEFAULT_PROFILE_DATA = {
   familyNotices: [],
   trainings: [],
   matches: [],
+  links: [],
   images: {
     one: "",
     two: ""
@@ -73,6 +74,7 @@ const notesPreview = $("notesPreview");
 const noticesPreview = $("noticesPreview");
 const trainingsPreview = $("trainingsPreview");
 const matchesPreview = $("matchesPreview");
+const linksPreview = $("linksPreview");
 const calendarTodayPreview = $("calendarTodayPreview");
 
 const imageOnePreview = $("imageOnePreview");
@@ -361,6 +363,7 @@ function setupWidgetEvents() {
 }
 
 function renderAll() {
+  renderLinksPreview();
   renderFreeText();
   renderListsPreview();
   renderNotesPreview();
@@ -369,6 +372,27 @@ function renderAll() {
   renderEventsPreview("matches", matchesPreview);
   renderImages();
   renderTimer();
+}
+
+function renderLinksPreview() {
+  const links = (state.profileData.links || []).slice(0, 5);
+
+  if (!links.length) {
+    linksPreview.innerHTML = `<div class="emptyMini">Tryck för att lägga till</div>`;
+    return;
+  }
+
+  linksPreview.innerHTML = links.map((item) => `
+    <div class="solidMain linkItem" data-url="${item.url}">
+      ${escapeHtml(item.name)}
+    </div>
+  `).join("");
+
+  linksPreview.querySelectorAll(".linkItem").forEach(el => {
+    el.addEventListener("click", () => {
+      window.open(el.dataset.url, "_blank");
+    });
+  });
 }
 
 function renderFreeText() {
