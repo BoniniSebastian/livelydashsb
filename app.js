@@ -1244,11 +1244,8 @@ function compressImageToDataUrl(file, maxSize = 1400, quality = 0.82) {
 }
 
 async function loadCalendarEvents() {
-  const icsUrl = String(state.profileData.calendarIcs || "").trim();
-  if (!icsUrl) {
-    calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Ingen kalenderlänk vald för ${escapeHtml(state.activeProfile)}</div>`;
-    return;
-  }
+  return;
+}
 
   calendarTodayPreview.innerHTML = `<div class="emptyMini bright">Laddar dagens händelser...</div>`;
 
