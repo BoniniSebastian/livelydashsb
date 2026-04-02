@@ -1000,17 +1000,17 @@ textarea::placeholder{
     min-height:150px;
   }
 
-  .board{
-    position:relative;
-    left:auto;
-    top:auto;
-    width:100%;
-    height:auto;
-    transform:none;
-    display:grid;
-    grid-template-columns:1fr;
-    gap:12px;
-  }
+.board{
+  position:relative;
+  left:auto;
+  top:auto;
+  width:100%;
+  height:auto;
+  transform:none;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
   .widget{
     position:relative;
