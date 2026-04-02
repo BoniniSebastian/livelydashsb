@@ -201,9 +201,10 @@ textarea::placeholder{
 }
 
 .imageCard{
-  background:#0e1318;
-  border:1px solid rgba(255,255,255,.04);
+  background:none;          /* 🔥 bort med svart */
+  border:none;              /* 🔥 bort med ram */
   box-shadow:0 16px 40px rgba(0,0,0,.16);
+  padding:0;                /* 🔥 viktigt */
 }
 
 .imagePreview{
